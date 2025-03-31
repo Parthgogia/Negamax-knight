@@ -81,9 +81,11 @@ def main():
                     if move in legal_moves:
                         gs.make_move(move)
                         move_made =True
-                    #reset the move to allow user to make further moves
-                    sqare_selected = ()
-                    sqares_clicked = []
+                        #reset the move to allow user to make further moves
+                        sqare_selected = ()
+                        sqares_clicked = []
+                    else:
+                        sqares_clicked = [sqare_selected]                        
 
             elif e.type == p.KEYDOWN:
                     if e.key == p.K_z:
@@ -91,7 +93,7 @@ def main():
                         move_made = True #undo move is also considered as a move to generate legal moves 
         
         if move_made:
-            gs.get_legal_moves() #only generate legal moves if the move was made
+            legal_moves=gs.get_legal_moves() #only generate legal moves if the move was made
             move_made = False
 
                 

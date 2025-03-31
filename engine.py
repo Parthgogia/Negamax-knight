@@ -1,4 +1,3 @@
-import numpy as np;
 class game_state():
     def __init__(self):
         self.board = [
@@ -13,6 +12,8 @@ class game_state():
         ]
         self.white_move = True
         self.move_log = []
+        self.move_functions = {'P':self.get_pawn_moves, 'R':self.get_rook_moves, 'N':self.get_knight_moves,
+                              'Q': self.get_queen_moves, 'K':self.get_king_moves, 'B': self.get_bishop_moves}
 
     #doesn't work for pawn promotion, castling and en-passant
     def make_move(self,move):
@@ -32,45 +33,128 @@ class game_state():
         return self.get_possible_moves()
     
     def get_possible_moves(self):
-        moves =[Move((6,4),(4,4),self.board)]
+        moves =[]
         for r in range (len(self.board)):
             for c in range(len(self.board[r])):
                 piece_color = self.board[r][c][0]
                 if (piece_color=='w' and self.white_move) or (piece_color=='b' and not self.white_move):
                     piece = self.board[r][c][1]
-                    if piece == 'P':
-                        self.get_pawn_moves(r,c,moves)
-                    elif piece == 'Q':
-                        self.get_queen_moves(r,c,moves)
-                    elif piece == 'R':
-                        self.get_rook_moves(r,c,moves)
-                    elif piece == 'B':
-                        self.get_bishop_moves(r,c,moves)
-                    elif piece == 'N':
-                        self.get_knight_moves(r,c,moves)
-                    else:
-                        self.get_king_moves(r,c,moves)
+                    self.move_functions[piece](r,c,moves) #calling function for get the piece moves using dict
         return moves
     
 
     def get_pawn_moves(self,r,c,moves):
-        pass
-    def get_queen_moves(self,r,c,moves):
-        pass
-    def get_rook_moves(self,r,c,moves):
-        pass
-    def get_bishop_moves(self,r,c,moves):
-        pass
-    def get_knight_moves(self,r,c,moves):
-        pass
-    def get_king_moves(self,r,c,moves):
-        pass
+        if self.white_move: #white pawn moves
+            
+            if self.board[r-1][c]=="__": #forward moves
+                moves.append(Move((r,c),(r-1,c),self.board))
+                if r==6 and self.board[r-2][c]=="__":
+                    moves.append(Move((r,c),(r-2,c),self.board))
+
+            if c-1>=0 and self.board[r-1][c-1][0]=='b': #left captures
+                moves.append(Move((r,c),(r-1,c-1),self.board))
+
+            if c+1<=7 and self.board[r-1][c+1][0]=='b': #right captures
+                moves.append(Move((r,c),(r-1,c+1),self.board))
+
+
+        else: #black pawn moves
+            
+            if self.board[r+1][c]=="__": #forward moves
+                moves.append(Move((r,c),(r+1,c),self.board))
+                if r==1 and self.board[r+2][c]=="__":
+                    moves.append(Move((r,c),(r+2,c),self.board))
+
+            if c-1>=0 and self.board[r+1][c-1][0]=='w': #right captures
+                moves.append(Move((r,c),(r+1,c-1),self.board))
+
+            if c+1<=7 and self.board[r+1][c+1][0]=='w': #left captures
+                moves.append(Move((r,c),(r+1,c+1),self.board))
+
+        #pawn promotion and en passant moves are yet to to be generated
+
     
+    def get_rook_moves(self,r,c,moves):
+        directions = ((1,0),(-1,0),(0,1),(0,-1))
+        enemy_color = 'b' if self.white_move else 'w'
+
+        for d in directions:
+            for i in range(1,8):
+                final_row = r + d[0]*i
+                final_col = c + d[1]*i
+
+                if 0<=final_row<8 and 0<=final_col<8:
+                    end_piece = self.board[final_row][final_col]
+
+                    if end_piece == '__': #can move to empty space
+                        moves.append(Move((r,c),(final_row,final_col),self.board))
+                    elif end_piece[0] == enemy_color: #can capture an enemy piece
+                        moves.append(Move((r,c),(final_row,final_col),self.board))
+                        break   #cannot move further in that direction
+                    else:
+                        break # neither capture nor move further in that direction
+
+                else:
+                    break #out of bounds
 
 
 
 
+    def get_bishop_moves(self,r,c,moves):
+        directions = ((1,1),(-1,-1),(-1,1),(1,-1))
+        enemy_color = 'b' if self.white_move else 'w'
 
+        for d in directions:
+            for i in range(1,8):
+                final_row = r + d[0]*i
+                final_col = c + d[1]*i
+
+                if 0<=final_row<8 and 0<=final_col<8:
+                    end_piece = self.board[final_row][final_col]
+
+                    if end_piece == '__': #can move to empty space
+                        moves.append(Move((r,c),(final_row,final_col),self.board))
+                    elif end_piece[0] == enemy_color: #can capture an enemy piece
+                        moves.append(Move((r,c),(final_row,final_col),self.board))
+                        break   #cannot move further in that direction
+                    else:
+                        break # neither capture nor move further in that direction
+
+                else:
+                    break #out of bounds
+
+    def get_queen_moves(self,r,c,moves):
+        self.get_bishop_moves(r,c,moves)
+        self.get_rook_moves(r,c,moves)
+
+
+
+    def get_knight_moves(self,r,c,moves):
+        knight_moves = ((2,1),(2,-1),(-2,1),(-2,-1),(1,2),(1,-2),(-1,2),(-1,-2))
+        for move in knight_moves:
+            if 0<=r+move[0]<8 and 0<=c+move[1]<8:
+
+                if self.white_move and self.board[r+move[0]][c+move[1]][0] !='w': #white knight moves
+                    moves.append(Move((r,c),(r+move[0],c+move[1]),self.board))
+
+                elif not self.white_move and self.board[r+move[0]][c+move[1]][0] !='b': #black knight moves
+                    moves.append(Move((r,c),(r+move[0],c+move[1]),self.board))
+
+
+    def get_king_moves(self,r,c,moves):
+        king_moves= ((-1,-1),(-1,0),(-1,1),(1,-1),(1,0),(1,1),(0,-1),(0,1))
+        piece_color = 'w' if self.white_move else 'b'
+
+        for i in range(8):
+            final_row = r + king_moves[i][0]
+            final_col = c + king_moves[i][1]
+            if 0<=final_row<8 and 0<=final_col<8:
+                end_piece = self.board[final_row][final_col]
+                if end_piece[0] != piece_color: #end piece should not be of the same color as king
+                    moves.append(Move((r,c),(final_row,final_col),self.board))
+ 
+        
+    
 
 
 class Move():
