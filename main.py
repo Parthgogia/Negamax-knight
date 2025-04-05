@@ -43,8 +43,6 @@ def draw_pieces(screen,board):
 
 
 
-
-
 def main():
     p.init()
     screen = p.display.set_mode((BOARD_WIDTH,BOARD_HEIGHT))
