@@ -76,13 +76,14 @@ def main():
                 if len(sqares_clicked) ==2:
                     move = Move(sqares_clicked[0],sqares_clicked[1],gs.board)
                     print(move.get_chess_move())
-                    if move in legal_moves:
-                        gs.make_move(move)
-                        move_made =True
-                        #reset the move to allow user to make further moves
-                        sqare_selected = ()
-                        sqares_clicked = []
-                    else:
+                    for i in range(len(legal_moves)):
+                        if move == legal_moves[i]:
+                            gs.make_move(legal_moves[i])
+                            move_made =True
+                            #reset the move to allow user to make further moves
+                            sqare_selected = ()
+                            sqares_clicked = []
+                    if not move_made:
                         sqares_clicked = [sqare_selected]                        
 
             elif e.type == p.KEYDOWN:
@@ -103,4 +104,3 @@ def main():
 if __name__=="__main__":
     main()
          
-
