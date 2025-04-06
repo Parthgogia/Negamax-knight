@@ -23,12 +23,15 @@ class game_state():
         self.checks = []
         self.current_castling_rights = castling_rights(True,True,True,True)
         self.castling_rights_log = [copy.deepcopy(self.current_castling_rights)]
+        self.enpassant_sqaure = () #stores the coordinates of a square at which enpassant is possible
+        
 
     #doesn't work for pawn promotion, castling and en-passant
     def make_move(self,move):
         self.board[move.initial_row][move.initial_col] = "__"
         self.board[move.final_row][move.final_col] = move.piece_moved
         self.move_log.append(move)
+        self.white_move = not self.white_move
         
         if move.piece_moved == 'wK':
             self.white_king_location = (move.final_row,move.final_col)
@@ -44,14 +47,24 @@ class game_state():
             else: #queen side castle
                 self.board[move.final_row][move.final_col+1] = self.board[move.final_row][move.final_col-2] #copy the rook to new location
                 self.board[move.final_row][move.final_col-2] = "__" # remove the old rook
+        
+        #pawn promotion move
+        if move.is_pawn_promotion:
+            promotion_choice = input("Promote to Q, R, B or N: ")
+            self.board[move.final_row][move.final_col] = move.piece_moved[0] + promotion_choice
 
+        #en passant move
+        if move.is_enpassant_move:
+            self.board[move.initial_row][move.final_col] = "__"
 
         #update the castling rights 
         self.update_castling_rights(move)
 
-        self.white_move = not self.white_move
-
-     
+        #update the en passant square
+        if move.piece_moved[1] == 'P' and abs(move.initial_row - move.final_row) == 2:
+            self.enpassant_sqaure = ((move.initial_row + move.final_row)//2,move.initial_col)
+        else:
+            self.enpassant_sqaure = ()
 
     def undo_move(self):
         if len(self.move_log)!=0:
@@ -74,10 +87,20 @@ class game_state():
                     self.board[move.final_row][move.final_col-2] = self.board[move.final_row][move.final_col+1]
                     self.board[move.final_row][move.final_col+1] = "__"
                 
+            #undo en passant move
+            if move.is_enpassant_move:
+                self.board[move.final_row][move.final_col] = "__"
+                self.board[move.initial_row][move.final_col] = move.piece_captured
+                self.enpassant_sqaure = (move.final_row,move.final_col)
 
             #undo the castling rights
             self.castling_rights_log.pop()
             self.current_castling_rights = copy.deepcopy(self.castling_rights_log[-1])
+
+            #update the en passant square
+            if move.piece_moved[1] == 'P' and abs(move.initial_row - move.final_row) == 2:
+                self.enpassant_sqaure = ()
+                
 
 
     #castling rights change when a rook or king moves
@@ -204,7 +227,7 @@ class game_state():
                             break 
 
 
-                else:
+                else: #out of bounds
                     break
             
         #knight checks
@@ -257,10 +280,6 @@ class game_state():
                 else: #out of bounds
                     break    
                 
-
-        
-
-
     
     def get_possible_moves(self):
         moves =[]
@@ -292,13 +311,18 @@ class game_state():
                     if r==6 and self.board[r-2][c]=="__":
                         moves.append(Move((r,c),(r-2,c),self.board))
 
-            if c-1>=0 and self.board[r-1][c-1][0]=='b': #left captures
-                if not is_pinned or pin_direction == (-1,-1):
+            if not is_pinned or pin_direction == (-1,-1):
+                if c-1>=0 and self.board[r-1][c-1][0]=='b': #left captures
                     moves.append(Move((r,c),(r-1,c-1),self.board))
+                elif c-1>=0 and (r-1,c-1) == self.enpassant_sqaure: #left en passant captures
+                    moves.append(Move((r,c),(r-1,c-1),self.board,is_enpassant_move=True))
 
-            if c+1<=7 and self.board[r-1][c+1][0]=='b': #right captures
-                if not is_pinned or pin_direction == (-1,1):
+
+            if not is_pinned or pin_direction == (-1,1):
+                if c+1<=7 and self.board[r-1][c+1][0]=='b': #right captures       
                     moves.append(Move((r,c),(r-1,c+1),self.board))
+                elif c+1<=7 and (r-1,c+1) == self.enpassant_sqaure: #right en passant captures
+                    moves.append(Move((r,c),(r-1,c+1),self.board,is_enpassant_move=True))
 
 
         else: #black pawn moves
@@ -309,15 +333,19 @@ class game_state():
                     if r==1 and self.board[r+2][c]=="__":
                         moves.append(Move((r,c),(r+2,c),self.board))
 
-            if c-1>=0 and self.board[r+1][c-1][0]=='w': #right captures
-                if not is_pinned or pin_direction == (1,-1):
+            if not is_pinned or pin_direction == (1,-1):
+                if c-1>=0 and self.board[r+1][c-1][0]=='w': #right captures       
                     moves.append(Move((r,c),(r+1,c-1),self.board))
+                elif c-1>=0 and (r+1,c-1) == self.enpassant_sqaure: #right en passant captures
+                    moves.append(Move((r,c),(r+1,c-1),self.board,is_enpassant_move=True))
 
-            if c+1<=7 and self.board[r+1][c+1][0]=='w': #left captures
-                if not is_pinned or pin_direction == (1,1):
+
+            if not is_pinned or pin_direction == (1,1):
+                if c+1<=7 and self.board[r+1][c+1][0]=='w': #left captures
                     moves.append(Move((r,c),(r+1,c+1),self.board))
+                elif c+1<=7 and (r+1,c+1) == self.enpassant_sqaure: #left en passant captures
+                    moves.append(Move((r,c),(r+1,c+1),self.board,is_enpassant_move=True))        
 
-        #pawn promotion and en passant moves are yet to to be generated
 
     
     def get_rook_moves(self,r,c,moves):
@@ -355,8 +383,6 @@ class game_state():
 
                 else:
                     break #out of bounds
-
-
 
 
     def get_bishop_moves(self,r,c,moves):
@@ -492,7 +518,7 @@ class Move():
     cols_to_files = {0:"a", 1:"b", 2:"c", 3:"d", 4:"e", 5:"f", 6:"g", 7:"h"}
     files_to_cols = {a:b for a,b in cols_to_files.items()}
 
-    def __init__(self, initial_sq, final_sq, board, is_castle_move= False):
+    def __init__(self, initial_sq, final_sq, board, is_castle_move= False, is_enpassant_move = False):
         self.initial_row = initial_sq[0]
         self.initial_col = initial_sq[1]
         self.final_row = final_sq[0]
@@ -500,8 +526,18 @@ class Move():
         self.piece_moved = board[self.initial_row][self.initial_col]
         self.piece_captured = board[self.final_row][self.final_col]
         self.move_id = self.initial_row*1000+self.initial_col*100+self.final_row*10+self.final_col
-
+        
+        #flag for castling move
         self.is_castle_move = is_castle_move
+
+        #flag for pawn promotion move
+        self.is_pawn_promotion = (self.piece_moved == "wP" and self.final_row == 0) or (self.piece_moved == "bP" and self.final_row == 7)
+
+        #flag for en passant move
+        self.is_enpassant_move = is_enpassant_move
+
+        if self.is_enpassant_move:
+            self.piece_captured = "wP" if self.piece_moved == "bP" else "bP"
 
     #operator overloading for equal to compare 2 moves
     def __eq__(self, other):
