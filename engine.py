@@ -24,6 +24,8 @@ class game_state():
         self.current_castling_rights = castling_rights(True,True,True,True)
         self.castling_rights_log = [copy.deepcopy(self.current_castling_rights)]
         self.enpassant_sqaure = () #stores the coordinates of a square at which enpassant is possible
+        self.checkmate = False
+        self.stalemate = False
         
 
     #doesn't work for pawn promotion, castling and en-passant
@@ -101,6 +103,8 @@ class game_state():
             if move.piece_moved[1] == 'P' and abs(move.initial_row - move.final_row) == 2:
                 self.enpassant_sqaure = ()
                 
+            self.checkmate = False
+            self.stalemate = False
 
 
     #castling rights change when a rook or king moves
@@ -163,6 +167,14 @@ class game_state():
 
         else: #not in check
             moves = self.get_possible_moves()
+
+        if len(moves) == 0 and self.in_check:
+            self.checkmate = True
+        elif len(moves)==0:
+            self.stalemate = True
+        else:
+            self.checkmate = False
+            self.stalemate = False
 
         return moves
 
