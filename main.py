@@ -1,6 +1,6 @@
 from engine import game_state,Move
 import pygame as p
-
+from chessAI import get_random_move,find_best_move,find_minmax_best_move,find_negamax_best_move,find_alpha_beta_best_move
 
 BOARD_WIDTH = BOARD_HEIGHT = 672
 DIMENSION = 8
@@ -22,7 +22,6 @@ def load_images():
         image = p.image.load("images/"+piece+".png")
         IMAGES[piece] = p.transform.scale(image,(SQ_SIZE,SQ_SIZE))
 
-
 #draws all the graphics in the current game state
 def draw_game_state(screen,gs,legal_moves,sq_selected):
     draw_board(screen) 
@@ -36,7 +35,6 @@ def draw_board(screen):
             color_number = (r+c)%2 #even is always light and odd is always dark
             color = colors[color_number]
             p.draw.rect(screen,color,p.Rect(c*SQ_SIZE,r*SQ_SIZE,SQ_SIZE,SQ_SIZE))
-
 
 # draws the pieces on  the board using current game state
 def draw_pieces(screen,board):
@@ -62,11 +60,10 @@ def highlight_squares(screen,gs,legal_moves, sq_selected):
                 if move.initial_row == r and move.initial_col == c:
                     screen.blit(s,(move.final_col*SQ_SIZE,move.final_row*SQ_SIZE))
 
-
 def animate_move(move,screen,board,clock):
     drow = move.final_row - move.initial_row
     dcol = move.final_col - move.initial_col
-    frames_per_square = 5 #frames moving per square
+    frames_per_square = 10 #frames moving per square
     frame_count = (abs(drow)+abs(dcol)) *frames_per_square
 
     for frame in range (frame_count+1):
@@ -82,6 +79,10 @@ def animate_move(move,screen,board,clock):
 
         #draw captured piece onto final square
         if move.piece_captured != "__":
+            if move.is_enpassant_move:
+                enpassant_row = move.final_row+1 if move.piece_captured[0] == 'b' else move.final_row-1
+                final_square = p.Rect(move.final_col*SQ_SIZE, enpassant_row*SQ_SIZE, SQ_SIZE,SQ_SIZE)
+
             screen.blit(IMAGES[move.piece_captured],final_square)
 
         #draw moving piece
@@ -89,7 +90,7 @@ def animate_move(move,screen,board,clock):
         p.display.flip()
         clock.tick(120)
 
-def draw_text(screen, text):
+def draw_endgame_text(screen, text):
     font = p.font.SysFont("Arial", 48, True)
     
     # Render the text surfaces: one for the shadow and one for the main text
@@ -135,15 +136,20 @@ def main():
     square_selected = ()
     squares_clicked = []
     game_over = False
+    player_one = True #player one is white
+    player_two = True #player two is black
+
 
     while running:
+        human_turn = (gs.white_move and player_one) or (not gs.white_move and player_two)
+        
         for e in p.event.get():
 
             if e.type == p.QUIT:
                 running = False
 
             elif e.type == p.MOUSEBUTTONDOWN:
-                if not game_over:
+                if not game_over and human_turn:
                     loc = p.mouse.get_pos()
                     row = loc[1]//SQ_SIZE
                     col = loc[0]//SQ_SIZE
@@ -184,6 +190,16 @@ def main():
                         animate = False
                         game_over = False
 
+        #AI moves
+        if not game_over and not human_turn:
+            AI_move = find_alpha_beta_best_move(gs,legal_moves)
+            if AI_move is None:
+                AI_move = get_random_move(legal_moves)
+            gs.make_move(AI_move)
+            move_made = True
+            animate = True
+
+
         if move_made:
             if animate:
                 animate_move(gs.move_log[-1], screen, gs.board, clock)
@@ -196,12 +212,13 @@ def main():
         if gs.checkmate:
             game_over = True
             if gs.white_move:
-                draw_text(screen, "Black wins by checkmate")
+                draw_endgame_text(screen, "Black wins by checkmate")
             else:
-                draw_text(screen, "White wins by checkmate")
+                draw_endgame_text(screen, "White wins by checkmate")
         elif gs.stalemate:
             game_over = True
-            draw_text(screen, "Game draw by stalemate")
+            draw_endgame_text(screen, "Game draw by stalemate")
+        
               
         clock.tick(MAX_FPS)
         p.display.flip()

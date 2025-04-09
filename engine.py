@@ -23,7 +23,8 @@ class game_state():
         self.checks = []
         self.current_castling_rights = castling_rights(True,True,True,True)
         self.castling_rights_log = [copy.deepcopy(self.current_castling_rights)]
-        self.enpassant_sqaure = () #stores the coordinates of a square at which enpassant is possible
+        self.enpassant_square = () #stores the coordinates of a square at which enpassant is possible
+        self.enpassant_possible_log = [self.enpassant_square]
         self.checkmate = False
         self.stalemate = False
         
@@ -52,7 +53,8 @@ class game_state():
         
         #pawn promotion move
         if move.is_pawn_promotion:
-            promotion_choice = input("Promote to Q, R, B or N: ")
+            # promotion_choice = input("Promote to Q, R, B or N: ")
+            promotion_choice = 'Q'          
             self.board[move.final_row][move.final_col] = move.piece_moved[0] + promotion_choice
 
         #en passant move
@@ -64,9 +66,14 @@ class game_state():
 
         #update the en passant square
         if move.piece_moved[1] == 'P' and abs(move.initial_row - move.final_row) == 2:
-            self.enpassant_sqaure = ((move.initial_row + move.final_row)//2,move.initial_col)
+            self.enpassant_square = ((move.initial_row + move.final_row)//2,move.initial_col)
         else:
-            self.enpassant_sqaure = ()
+            self.enpassant_square = ()
+
+        #update en passant rights log
+        self.enpassant_possible_log.append(self.enpassant_square)
+        
+
 
     def undo_move(self):
         if len(self.move_log)!=0:
@@ -93,21 +100,21 @@ class game_state():
             if move.is_enpassant_move:
                 self.board[move.final_row][move.final_col] = "__"
                 self.board[move.initial_row][move.final_col] = move.piece_captured
-                self.enpassant_sqaure = (move.final_row,move.final_col)
 
             #undo the castling rights
             self.castling_rights_log.pop()
             self.current_castling_rights = copy.deepcopy(self.castling_rights_log[-1])
 
             #update the en passant square
-            if move.piece_moved[1] == 'P' and abs(move.initial_row - move.final_row) == 2:
-                self.enpassant_sqaure = ()
+            self.enpassant_possible_log.pop()
+            self.enpassant_square = self.enpassant_possible_log[-1]
                 
+            #update checkmate and stalemate flags
             self.checkmate = False
             self.stalemate = False
 
 
-    #castling rights change when a rook or king moves
+    #castling rights change when a rook or king moves, or rook is captured
     def update_castling_rights(self,move):
         if move.piece_moved == 'wK':
             self.current_castling_rights.wks = False
@@ -128,6 +135,22 @@ class game_state():
                 self.current_castling_rights.bqs = False
             elif move.initial_row == 0 and move.initial_col == 7:
                 self.current_castling_rights.bks = False
+
+        if move.piece_captured == 'wR':
+            if move.final_row == 7:
+                if move.final_col == 0:
+                    self.current_castling_rights.wqs = False
+                elif move.final_col == 7:
+                    self.current_castling_rights.wks = False
+        
+        elif move.piece_captured == "bR":
+            if move.final_row == 0:
+                if move.final_col == 0:
+                    self.current_castling_rights.bqs = False
+                elif move.final_col == 7:
+                    self.current_castling_rights.bks = False
+   
+                
         
         self.castling_rights_log.append(copy.deepcopy(self.current_castling_rights))
     
@@ -326,14 +349,14 @@ class game_state():
             if not is_pinned or pin_direction == (-1,-1):
                 if c-1>=0 and self.board[r-1][c-1][0]=='b': #left captures
                     moves.append(Move((r,c),(r-1,c-1),self.board))
-                elif c-1>=0 and (r-1,c-1) == self.enpassant_sqaure: #left en passant captures
+                elif c-1>=0 and (r-1,c-1) == self.enpassant_square: #left en passant captures
                     moves.append(Move((r,c),(r-1,c-1),self.board,is_enpassant_move=True))
 
 
             if not is_pinned or pin_direction == (-1,1):
                 if c+1<=7 and self.board[r-1][c+1][0]=='b': #right captures       
                     moves.append(Move((r,c),(r-1,c+1),self.board))
-                elif c+1<=7 and (r-1,c+1) == self.enpassant_sqaure: #right en passant captures
+                elif c+1<=7 and (r-1,c+1) == self.enpassant_square: #right en passant captures
                     moves.append(Move((r,c),(r-1,c+1),self.board,is_enpassant_move=True))
 
 
@@ -348,14 +371,14 @@ class game_state():
             if not is_pinned or pin_direction == (1,-1):
                 if c-1>=0 and self.board[r+1][c-1][0]=='w': #right captures       
                     moves.append(Move((r,c),(r+1,c-1),self.board))
-                elif c-1>=0 and (r+1,c-1) == self.enpassant_sqaure: #right en passant captures
+                elif c-1>=0 and (r+1,c-1) == self.enpassant_square: #right en passant captures
                     moves.append(Move((r,c),(r+1,c-1),self.board,is_enpassant_move=True))
 
 
             if not is_pinned or pin_direction == (1,1):
                 if c+1<=7 and self.board[r+1][c+1][0]=='w': #left captures
                     moves.append(Move((r,c),(r+1,c+1),self.board))
-                elif c+1<=7 and (r+1,c+1) == self.enpassant_sqaure: #left en passant captures
+                elif c+1<=7 and (r+1,c+1) == self.enpassant_square: #left en passant captures
                     moves.append(Move((r,c),(r+1,c+1),self.board,is_enpassant_move=True))        
 
 
