@@ -137,7 +137,7 @@ def main():
     squares_clicked = []
     game_over = False
     player_one = True #player one is white
-    player_two = True #player two is black
+    player_two = False #player two is black
 
 
     while running:
@@ -177,7 +177,12 @@ def main():
 
             elif e.type == p.KEYDOWN:
                     if e.key == p.K_z:
-                        gs.undo_move()
+                        if player_one!=player_two: #when playing against AI undo move will undo AI's move plus human's move
+                            gs.undo_move()
+                            gs.undo_move()
+                            human_turn = True  
+                        else:
+                            gs.undo_move()
                         game_over = False
                         move_made = True #undo move is also considered as a move to generate legal moves 
                         animate = False 

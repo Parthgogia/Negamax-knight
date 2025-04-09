@@ -5,10 +5,10 @@ class game_state():
         self.board = [
             ["bR","bN","bB","bQ","bK","bB","bN","bR"],
             ["bP","bP","bP","bP","bP","bP","bP","bP"],
-            ["__","__","__","__","__","__","__","__",],
-            ["__","__","__","__","__","__","__","__",],
-            ["__","__","__","__","__","__","__","__",],
-            ["__","__","__","__","__","__","__","__",],
+            ["__","__","__","__","__","__","__","__"],
+            ["__","__","__","__","__","__","__","__"],
+            ["__","__","__","__","__","__","__","__"],
+            ["__","__","__","__","__","__","__","__"],
             ["wP","wP","wP","wP","wP","wP","wP","wP"],
             ["wR","wN","wB","wQ","wK","wB","wN","wR"]
         ]
@@ -350,14 +350,16 @@ class game_state():
                 if c-1>=0 and self.board[r-1][c-1][0]=='b': #left captures
                     moves.append(Move((r,c),(r-1,c-1),self.board))
                 elif c-1>=0 and (r-1,c-1) == self.enpassant_square: #left en passant captures
-                    moves.append(Move((r,c),(r-1,c-1),self.board,is_enpassant_move=True))
+                    if  self.is_enpassant_legal('b',(r,c),0):        
+                        moves.append(Move((r,c),(r-1,c-1),self.board,is_enpassant_move=True))
 
 
             if not is_pinned or pin_direction == (-1,1):
                 if c+1<=7 and self.board[r-1][c+1][0]=='b': #right captures       
                     moves.append(Move((r,c),(r-1,c+1),self.board))
                 elif c+1<=7 and (r-1,c+1) == self.enpassant_square: #right en passant captures
-                    moves.append(Move((r,c),(r-1,c+1),self.board,is_enpassant_move=True))
+                    if  self.is_enpassant_legal('b',(r,c),1):        
+                        moves.append(Move((r,c),(r-1,c+1),self.board,is_enpassant_move=True))
 
 
         else: #black pawn moves
@@ -372,17 +374,57 @@ class game_state():
                 if c-1>=0 and self.board[r+1][c-1][0]=='w': #right captures       
                     moves.append(Move((r,c),(r+1,c-1),self.board))
                 elif c-1>=0 and (r+1,c-1) == self.enpassant_square: #right en passant captures
-                    moves.append(Move((r,c),(r+1,c-1),self.board,is_enpassant_move=True))
+                    if  self.is_enpassant_legal('w',(r,c),0):        
+                        moves.append(Move((r,c),(r+1,c-1),self.board,is_enpassant_move=True))
 
 
             if not is_pinned or pin_direction == (1,1):
                 if c+1<=7 and self.board[r+1][c+1][0]=='w': #left captures
                     moves.append(Move((r,c),(r+1,c+1),self.board))
                 elif c+1<=7 and (r+1,c+1) == self.enpassant_square: #left en passant captures
-                    moves.append(Move((r,c),(r+1,c+1),self.board,is_enpassant_move=True))        
+                    if  self.is_enpassant_legal('w',(r,c),1):        
+                        moves.append(Move((r,c),(r+1,c+1),self.board,is_enpassant_move=True))        
 
 
-    
+    def is_enpassant_legal(self,enemy_color,ally_pawn_location,direction): #direction is 0 for left en passant captures, 1 for right en passant captures for white, reverse for black
+        ally_pawn_row,ally_pawn_col = ally_pawn_location
+
+        attacking_piece = blocking_piece = False
+        king_row, king_col = self.white_king_location if self.white_move else self.black_king_location
+
+        if king_row == ally_pawn_row:
+            if direction == 0: #left captures
+                if king_col<ally_pawn_col:                                 #king is to he left of the pawn                                     
+                    inside_range = range(king_col+1,ally_pawn_col-1)       #from right of the king to left of enemy pawn
+                    outside_range = range(ally_pawn_col+1,8)               #from right of ally pawn to end of board
+                else:                                                      #king is to the right of the pawn
+                    inside_range = range(king_col-1,ally_pawn_col,-1)      #from left of the king to right of ally pawn
+                    outside_range = range(ally_pawn_col-2,-1,-1)           #from left of enemy pawn to end of board
+            else :   #direction ==1  right captures
+                if king_col<ally_pawn_col:                                 #king is to the left of the pawn                                     
+                    inside_range = range(king_col+1,ally_pawn_col)         #from right of the king to left of enemy pawn
+                    outside_range = range(ally_pawn_col+2,8)               #from right of ally pawn to end of board
+                else:                                                      #king is to the right of the pawn
+                    inside_range = range(king_col-1,ally_pawn_col+1,-1)    #from left of the king to right of ally pawn
+                    outside_range = range(ally_pawn_col-1,-1,-1)           #from left of enemy pawn to end of board
+
+            for i in inside_range:
+                if self.board[ally_pawn_row][i]!= "__": #some other piece is there beside en passant pawn
+                    blocking_piece = True
+            for i in outside_range:
+                square = self.board[ally_pawn_row][i]
+                if square[0] == enemy_color and (square[1]=='Q' or square[1]=='R'):       
+                    attacking_piece = True
+                elif square != "__":
+                    blocking_piece = True
+            if not attacking_piece or blocking_piece:
+                return True
+            else:
+                return False
+        return True
+        
+
+
     def get_rook_moves(self,r,c,moves):
         is_pinned = False
         pin_direction = ()

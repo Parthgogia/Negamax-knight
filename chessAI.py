@@ -7,7 +7,7 @@ DEPTH = 3
 
 
 def get_random_move(legal_moves):
-    return legal_moves[random.randint(0 , len(legal_moves)-1)]
+    return random.choice(legal_moves)
 
 
 def get_material_value(board):
