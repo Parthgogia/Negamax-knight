@@ -1,6 +1,6 @@
 from engine import game_state,Move
 import pygame as p
-from chessAI import get_random_move,find_best_move,find_minmax_best_move,find_negamax_best_move,find_alpha_beta_best_move
+from algorithms import get_random_move,find_alpha_beta_best_move
 
 BOARD_WIDTH = BOARD_HEIGHT = 672
 DIMENSION = 8
@@ -163,10 +163,10 @@ def main():
                     
                     if len(squares_clicked) ==2:
                         move = Move(squares_clicked[0],squares_clicked[1],gs.board)
-                        print(move.get_chess_move())
                         for i in range(len(legal_moves)):
                             if move == legal_moves[i]:
                                 gs.make_move(legal_moves[i])
+                                print(move.get_chess_move())
                                 move_made =True
                                 animate = True
                                 #reset the move to allow user to make further moves

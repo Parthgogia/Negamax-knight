@@ -27,6 +27,8 @@ class game_state():
         self.enpassant_possible_log = [self.enpassant_square]
         self.checkmate = False
         self.stalemate = False
+
+        self.no_of_legal_moves = 0
         
 
     #doesn't work for pawn promotion, castling and en-passant
@@ -199,6 +201,7 @@ class game_state():
             self.checkmate = False
             self.stalemate = False
 
+        self.no_of_legal_moves = len(moves)
         return moves
 
     def check_for_pins_and_checks(self):

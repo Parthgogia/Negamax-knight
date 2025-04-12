@@ -3,7 +3,74 @@ import random
 piece_value = {'K':0, 'Q':9, 'N':3, 'B':3, 'R':5, 'P':1}
 CHECKMATE = 10000
 STALEMATE = 0
-DEPTH = 3
+DEPTH = 4
+
+#piece positional scores
+
+knight_scores = [[1, 1, 1, 1, 1, 1, 1, 1],
+                 [1, 2, 2, 2, 2, 2, 2, 1],
+                 [1, 2, 3, 3, 3, 3, 2, 1],
+                 [1, 2, 3, 4, 4, 3, 2, 1],
+                 [1, 2, 3, 4, 4, 3, 2, 1],
+                 [1, 2, 3, 3, 3, 3, 2, 1],
+                 [1, 2, 2, 2, 2, 2, 2, 1],
+                 [1, 1, 1, 1, 1, 1, 1, 1]]
+
+bishop_scores = [[4, 3, 2, 1, 1, 2, 3, 4],
+                 [3, 4, 3, 2, 2, 3, 4, 3],
+                 [2, 3, 4, 3, 3, 4, 3, 2],
+                 [1, 2, 3, 4, 4, 3, 2, 1],
+                 [1, 2, 3, 4, 4, 3, 2, 1],
+                 [2, 3, 4, 3, 3, 4, 3, 2],
+                 [3, 4, 3, 2, 2, 3, 4, 3],
+                 [4, 3, 2, 1, 1, 2, 3, 4]]
+
+rook_scores =  [[4, 3, 4, 4, 4, 4, 3, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4],
+                [1, 1, 2, 3, 3, 2, 1, 1],
+                [1, 2, 3, 4, 4, 3, 2, 1],
+                [1, 2, 3, 4, 4, 3, 2, 1],
+                [1, 1, 2, 3, 3, 2, 1, 1],
+                [4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 3, 4, 4, 4, 4, 3, 4]]
+
+queen_scores =  [[1, 1, 1, 3, 1, 1, 1, 1],
+                 [1, 2, 3, 3, 3, 1, 1, 1],
+                 [1, 4, 3, 3, 3, 4, 2, 1],
+                 [1, 2, 3, 3, 3, 3, 2, 1],
+                 [1, 2, 3, 3, 3, 3, 2, 1],
+                 [1, 4, 3, 3, 3, 4, 2, 1],
+                 [1, 1, 2, 3, 3, 1, 1, 1],
+                 [1, 1, 1, 3, 1, 1, 1, 1]]
+
+king_scores = [[1, 1, 5, 1, 1, 1, 5, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 5, 1, 1, 1, 5, 1]]
+
+white_pawn_scores = [[9, 9, 9, 9, 9, 9, 9, 9],
+                     [8, 8, 8, 8, 8, 8, 8, 8],
+                     [5, 6, 6, 7, 7, 6, 6, 5],
+                     [3, 4, 4, 5, 5, 4, 4, 3],
+                     [1, 2, 3, 4, 4, 3, 2, 1],
+                     [1, 1, 2, 3, 3, 2, 1, 1],
+                     [1, 1, 1, 0, 0, 1, 1, 1],
+                     [0, 0, 0, 0, 0, 0, 0, 0]]
+
+black_pawn_scores = [[0, 0, 0, 0, 0, 0, 0, 0],
+                     [1, 1, 1, 0, 0, 1, 1, 1],
+                     [1, 1, 2, 3, 3, 2, 1, 1],
+                     [1, 2, 3, 4, 4, 3, 2, 1],
+                     [3, 4, 4, 5, 5, 4, 4, 3],
+                     [5, 6, 6, 7, 7, 6, 6, 5],
+                     [8, 8, 8, 8, 8, 8, 8, 8],
+                     [9, 9, 9, 9, 9, 9, 9, 9]]
+
+piece_positional_value = {'K':king_scores, 'Q':queen_scores, 'N':knight_scores, 'B':bishop_scores, 'R':rook_scores, 'wP':white_pawn_scores, 'bP':black_pawn_scores}
 
 
 def get_random_move(legal_moves):
@@ -35,14 +102,41 @@ def score_board(gs):
         return STALEMATE
 
     score =0
-    for i in range(8):
-        for j in range(8):
-            color = gs.board[i][j][0]
-            piece = gs.board[i][j][1]
-            if color == 'w':
-                score+= piece_value[piece]
-            elif color == 'b':
-                score-= piece_value[piece]
+    for row in range(8):
+        for col in range(8):
+            square = gs.board[row][col]
+            color = square[0]
+            piece = square[1]
+            if square != "__":
+                #score on the basis of position
+                piece_positional_score = 0
+                if piece == 'P':
+                    piece_positional_score = piece_positional_value[square][row][col]
+                else:
+                    piece_positional_score = piece_positional_value[piece][row][col]
+                
+                #score on the basis of material
+                if color == 'w':
+                    score += piece_value[piece] + piece_positional_score*0.1
+                elif color == 'b':
+                    score -= piece_value[piece] + piece_positional_score*0.1
+    
+    #score on the basis of number of legal moves,checks and pins
+    if gs.white_move:
+        score += gs.no_of_legal_moves * 0.01
+        if gs.in_check:
+            score-=1
+        if len(gs.pins)>0:
+            score-= len(gs.pins)*0.1
+    else:
+        score -= gs.no_of_legal_moves * 0.01
+        if gs.in_check:
+            score+=1
+        if len(gs.pins)>0:
+            score+= len(gs.pins)*0.1
+
+    
+    
     return score
 
 
@@ -179,6 +273,7 @@ def get_alpha_beta_move(gs,legal_moves,depth,alpha,beta,turn_multiplier):
             max_score = score
             if depth == DEPTH:
                 next_move = move
+                print(move.get_chess_move(),score)
         gs.undo_move()
 
         if max_score>alpha: #pruning
