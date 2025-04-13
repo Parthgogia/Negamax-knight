@@ -3,7 +3,7 @@ import random
 piece_value = {'K':0, 'Q':9, 'N':3, 'B':3, 'R':5, 'P':1}
 CHECKMATE = 10000
 STALEMATE = 0
-DEPTH = 4
+DEPTH = 3
 
 #piece positional scores
 

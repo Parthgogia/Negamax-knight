@@ -8,6 +8,9 @@ SQ_SIZE = BOARD_HEIGHT // DIMENSION
 MAX_FPS = 30
 IMAGES = {}
 
+PLAY_AS_WHITE = True
+PLAY_AS_BLACK = False
+
 #Green board
 LIGHT_SQUARE_COLOR = (237, 238, 209)
 DARK_SQUARE_COLOR = (119, 153, 82)
@@ -173,8 +176,8 @@ def main():
     square_selected = ()
     squares_clicked = []
     game_over = False
-    player_one = True #player one is white
-    player_two = False #player two is black
+    player_one = PLAY_AS_WHITE #player one is white
+    player_two = PLAY_AS_BLACK #player two is black
 
 
     while running:
