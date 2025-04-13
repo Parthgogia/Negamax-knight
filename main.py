@@ -8,10 +8,27 @@ SQ_SIZE = BOARD_HEIGHT // DIMENSION
 MAX_FPS = 30
 IMAGES = {}
 
+#Green board
 LIGHT_SQUARE_COLOR = (237, 238, 209)
 DARK_SQUARE_COLOR = (119, 153, 82)
 PIECE_SELECTED_COLOR = (180, 10, 60)
 PIECE_MOVES_COLOR = (100, 149, 237)
+
+"""
+# Brown board
+LIGHT_SQUARE_COLOR = (240, 217, 181)
+DARK_SQUARE_COLOR = (181, 136, 99)
+PIECE_SELECETED_COLOR = (84, 115, 161)
+PIECE_MOVES_COLOR = (100, 149, 237)
+"""
+
+"""
+#Gray board
+LIGHT_SQUARE_COLOR = (220, 220, 220)
+DARK_SQUARE_COLOR = (130, 130, 130)
+PIECE_SELECETED_COLOR = (84, 115, 161)
+PIECE_MOVES_COLOR = (100, 149, 237)
+"""
 
 colors = [p.Color(LIGHT_SQUARE_COLOR), p.Color(DARK_SQUARE_COLOR)]
 
@@ -20,7 +37,7 @@ def load_images():
     pieces = ["bR","bN","bB","bQ","bK","bP","wR","wN","wB","wQ","wK","wP"]
     for piece in pieces:
         image = p.image.load("images/"+piece+".png")
-        IMAGES[piece] = p.transform.scale(image,(SQ_SIZE,SQ_SIZE))
+        IMAGES[piece] = p.transform.smoothscale(image,(SQ_SIZE,SQ_SIZE))
 
 #draws all the graphics in the current game state
 def draw_game_state(screen,gs,legal_moves,sq_selected):
@@ -63,8 +80,8 @@ def highlight_squares(screen,gs,legal_moves, sq_selected):
 def animate_move(move,screen,board,clock):
     drow = move.final_row - move.initial_row
     dcol = move.final_col - move.initial_col
-    frames_per_square = 10 #frames moving per square
-    frame_count = (abs(drow)+abs(dcol)) *frames_per_square
+    frames_per_square = 5 #frames moving per square
+    frame_count = (abs(drow)+abs(dcol)) * frames_per_square
 
     for frame in range (frame_count+1):
         r,c = (move.initial_row + drow*frame/frame_count, move.initial_col + dcol*frame/frame_count)
@@ -119,6 +136,26 @@ def draw_endgame_text(screen, text):
     screen.blit(shadow_surface, text_rect.move(*shadow_offset))
     screen.blit(text_surface, text_rect)
 
+def load_sounds():
+    p.mixer.init()
+    global default_sound,capture_sound,check_sound,castle_sound,promotion_sound
+    default_sound = p.mixer.Sound("sounds/default.mp3")
+    capture_sound = p.mixer.Sound("sounds/capture.mp3")
+    check_sound = p.mixer.Sound("sounds/check.mp3")
+    castle_sound =  p.mixer.Sound("sounds/castle.mp3")
+    promotion_sound = p.mixer.Sound("sounds/promote.mp3")
+
+def play_sound(move,in_check):
+    if in_check:
+        check_sound.play()
+    elif move.is_castle_move:
+        castle_sound.play()
+    elif move.is_pawn_promotion:
+        promotion_sound.play()
+    elif move.piece_captured !="__":
+        capture_sound.play()
+    else:
+        default_sound.play()
 
 
 def main():
@@ -128,7 +165,7 @@ def main():
     screen.fill(p.Color(LIGHT_SQUARE_COLOR))
     gs = game_state()
     load_images()
-
+    load_sounds()
     legal_moves = gs.get_legal_moves()
     move_made = False  #flag variable to track if the move is made
     animate = False #flag variable for when to animate a move 
@@ -164,7 +201,7 @@ def main():
                     if len(squares_clicked) ==2:
                         move = Move(squares_clicked[0],squares_clicked[1],gs.board)
                         for i in range(len(legal_moves)):
-                            if move == legal_moves[i]:
+                            if move == legal_moves[i]:                              
                                 gs.make_move(legal_moves[i])
                                 print(move.get_chess_move())
                                 move_made =True
@@ -209,6 +246,8 @@ def main():
             if animate:
                 animate_move(gs.move_log[-1], screen, gs.board, clock)
             legal_moves=gs.get_legal_moves() #only generate legal moves if the move was made
+            if len(gs.move_log)>0:
+                play_sound(gs.move_log[-1],gs.in_check)
             move_made = False
             animate = False
 
