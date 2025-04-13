@@ -6,7 +6,7 @@ This is a lightweight chess engine and GUI built in Python using Pygame. It supp
 
 ## Preview
 
-<video controls src="preview.mp4" title="Title"></video>
+![Chess preview](preview.gif)
 
 ## Features
 
