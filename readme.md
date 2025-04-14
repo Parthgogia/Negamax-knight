@@ -1,8 +1,7 @@
 
-# Negamax Knight
+# Negamax Knight♟️
 
 This is a lightweight chess engine and GUI built in Python using Pygame. It supports human vs. human play as well as human vs. AI. The AI uses alpha-beta search with configurable depth, and the interface includes move animations, sound effects, undo/reset functionality, and move logging.
-
 
 ## Preview
 
@@ -12,7 +11,7 @@ This is a lightweight chess engine and GUI built in Python using Pygame. It supp
 
 - Graphical Board: Renders an 8×8 chessboard with piece images.
 - Move Animation: Smooth piece sliding animations for each move.
-- Sound Effects: Plays a move sound and a capture sound.
+- Sound Effects: Plays unique sounds for standard moves, captures, checks, castling, and pawn promotions.
 - Human vs. Human: Two-player mode on the same machine.
 - Human vs. AI: AI opponent powered by alpha-beta search. Configurable search depth (default: 3 plies).
 - Undo / Reset: Undo one or more moves using Z, and reset the board to the starting position using R.
@@ -20,7 +19,7 @@ This is a lightweight chess engine and GUI built in Python using Pygame. It supp
 - Advanced Chess Rules: Supports rules like castling (king-side and queen-side), pawn promotion, and en passant captures.
 
 
-## Run Locally
+## How to run 🕹️
 
 Clone the project
 
@@ -45,7 +44,7 @@ Run the game:
 ```bash
   python main.py
 ```
-<br/>
+
 
 ## Gameplay
 
@@ -69,7 +68,7 @@ Human vs. AI (play as Black)
 PLAY_AS_WHITE = False
 PLAY_AS_BLACK = True
 ```
-<br/>
+
 
 ### Controls
 
@@ -93,7 +92,6 @@ Z – Undo the last move. (In Human vs. AI mode, it undoes both the human and AI
 
 R – Reset the game to its initial state.
 
-<br/>
 
 ### AI Search Depth
 

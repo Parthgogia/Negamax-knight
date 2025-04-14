@@ -125,7 +125,7 @@ def score_board(gs):
     if gs.white_move:
         score += gs.no_of_legal_moves * 0.01
         if gs.in_check:
-            score-=1
+            score-=0.75
         if len(gs.pins)>0:
             score-= len(gs.pins)*0.1
     else:
