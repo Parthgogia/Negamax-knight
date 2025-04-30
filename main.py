@@ -1,6 +1,6 @@
 from engine import game_state,Move
 import pygame as p
-from algorithms import get_random_move,find_alpha_beta_best_move
+from algorithms import get_random_move,find_alpha_beta_best_move,find_minmax_best_move,find_negamax_best_move
 
 BOARD_WIDTH = BOARD_HEIGHT = 672
 DIMENSION = 8
@@ -64,10 +64,86 @@ def draw_pieces(screen,board):
             if piece != "__":
                 screen.blit(IMAGES[piece],p.Rect(c*SQ_SIZE,r*SQ_SIZE,SQ_SIZE,SQ_SIZE))
 
+def pawnPromotionPopup(screen, gs, final_row, final_col):
+    BUTTON_SIZE = SQ_SIZE
+    BORDER_WIDTH = 3
+    CORNER_RADIUS = 10
+
+    # Calculate popup position
+    pawn_screen_x = final_col * SQ_SIZE + SQ_SIZE // 2
+    popup_x = pawn_screen_x - (2 * BUTTON_SIZE)
+    popup_x = max(20, min(popup_x, BOARD_WIDTH - 4 * BUTTON_SIZE - 20))
+
+    # Vertical positioning with padding
+    if final_row == 0:  # White promoting
+        popup_y = (final_row + 1) * SQ_SIZE + 10
+    else:  # Black promoting
+        popup_y = final_row * SQ_SIZE - BUTTON_SIZE - 10
+
+    # Create button positions
+    buttons = [
+        p.Rect(popup_x, popup_y, BUTTON_SIZE, BUTTON_SIZE),
+        p.Rect(popup_x + BUTTON_SIZE, popup_y, BUTTON_SIZE, BUTTON_SIZE),
+        p.Rect(popup_x + 2*BUTTON_SIZE, popup_y, BUTTON_SIZE, BUTTON_SIZE),
+        p.Rect(popup_x + 3*BUTTON_SIZE, popup_y, BUTTON_SIZE, BUTTON_SIZE)
+    ]
+
+    # Load piece images
+    color_prefix = 'w' if gs.white_to_move else 'b'
+    piece_types = ['Q', 'R', 'B', 'N']
+    button_images = [
+        p.transform.smoothscale(p.image.load(f"images/{color_prefix}{pt}.png"), 
+        (BUTTON_SIZE-4, BUTTON_SIZE-4)) for pt in piece_types
+    ]
+
+    while True:
+        # Event handling
+        for e in p.event.get():
+            if e.type == p.QUIT:
+                p.quit()
+                return None
+            elif e.type == p.MOUSEBUTTONDOWN:
+                mouse_pos = p.mouse.get_pos()
+                for i, button in enumerate(buttons):
+                    if button.collidepoint(mouse_pos):
+                        return piece_types[i]
+
+        # Draw background overlay
+        overlay_width = 4 * BUTTON_SIZE + 20
+        overlay_height = BUTTON_SIZE + 20
+        overlay_x = popup_x - 10
+        overlay_y = popup_y - 10
+        
+        # Main container with shadow
+        p.draw.rect(screen, p.Color(100, 100, 100, 150), 
+                   (overlay_x-2, overlay_y-2, overlay_width+4, overlay_height+4),
+                   border_radius=CORNER_RADIUS)
+        
+        # Primary background
+        p.draw.rect(screen, p.Color(240, 240, 240, 220),
+                   (overlay_x, overlay_y, overlay_width, overlay_height),
+                   border_radius=CORNER_RADIUS)
+        
+        # Border around container
+        p.draw.rect(screen, p.Color(80, 80, 80),
+                   (overlay_x, overlay_y, overlay_width, overlay_height),
+                   BORDER_WIDTH, CORNER_RADIUS)
+
+        # Draw promotion pieces with borders
+        for i, (button, img) in enumerate(zip(buttons, button_images)):
+            # Button background
+            p.draw.rect(screen, p.Color(220, 220, 220), button, border_radius=5)
+            # Piece image with border
+            p.draw.rect(screen, p.Color(180, 180, 180), button, BORDER_WIDTH, 5)
+            screen.blit(img, (button.x + 2, button.y + 2))
+
+        p.display.flip()
+
+
 def highlight_squares(screen,gs,legal_moves, sq_selected):
     if sq_selected!=():
         r,c = sq_selected
-        if gs.board[r][c][0] == ('w' if gs.white_move else 'b'): #sq selected should have a piece color same as whose turn it is
+        if gs.board[r][c][0] == ('w' if gs.white_to_move else 'b'): #sq selected should have a piece color same as whose turn it is
             #highlight selected square
             s = p.Surface((SQ_SIZE,SQ_SIZE))
             s.set_alpha(150) #transparency value (0-225)
@@ -113,9 +189,8 @@ def animate_move(move,screen,board,clock):
 def draw_endgame_text(screen, text):
     font = p.font.SysFont("Arial", 48, True)
     
-    # Render the text surfaces: one for the shadow and one for the main text
+    # Render the text surface for the main text
     text_surface = font.render(text, True, p.Color('Black'))
-    shadow_surface = font.render(text, True, p.Color('Gray'))
     
     # Center the text
     text_rect = text_surface.get_rect(center=(BOARD_WIDTH/2, BOARD_HEIGHT/2))
@@ -129,14 +204,11 @@ def draw_endgame_text(screen, text):
     
     # Draw a border around the background rectangle for extra definition
     border_color = p.Color('Black')
-    border_thickness = 5
-    p.draw.rect(screen, border_color, background_rect.inflate(border_thickness, border_thickness), border_thickness, border_radius=8)
+    border_thickness = 8
+    p.draw.rect(screen, border_color, background_rect.inflate(border_thickness, border_thickness), border_thickness, border_radius=0)
     
-    # Blit the background, then the text shadow, then the main text
+    # Blit the background, then the main text
     screen.blit(background_surface, background_rect)
-    # Offset shadow for a subtle depth effect
-    shadow_offset = (3, 3)
-    screen.blit(shadow_surface, text_rect.move(*shadow_offset))
     screen.blit(text_surface, text_rect)
 
 def load_sounds():
@@ -181,7 +253,7 @@ def main():
 
 
     while running:
-        human_turn = (gs.white_move and player_one) or (not gs.white_move and player_two)
+        human_turn = (gs.white_to_move and player_one) or (not gs.white_to_move and player_two)
         
         for e in p.event.get():
 
@@ -204,8 +276,13 @@ def main():
                     if len(squares_clicked) ==2:
                         move = Move(squares_clicked[0],squares_clicked[1],gs.board)
                         for i in range(len(legal_moves)):
-                            if move == legal_moves[i]:                              
-                                gs.make_move(legal_moves[i])
+                            if move == legal_moves[i]:
+                                if move.is_pawn_promotion:
+                                    choice = pawnPromotionPopup(screen,gs,move.final_row,move.final_col)
+                                    move.promotion_choice = choice
+                                    gs.make_move(move)
+                                else: 
+                                    gs.make_move(legal_moves[i])
                                 print(move.get_chess_move())
                                 move_made =True
                                 animate = True
@@ -258,7 +335,7 @@ def main():
 
         if gs.checkmate:
             game_over = True
-            if gs.white_move:
+            if gs.white_to_move:
                 draw_endgame_text(screen, "Black wins by checkmate")
             else:
                 draw_endgame_text(screen, "White wins by checkmate")

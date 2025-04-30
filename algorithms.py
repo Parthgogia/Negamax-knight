@@ -3,7 +3,7 @@ import random
 piece_value = {'K':0, 'Q':9, 'N':3, 'B':3, 'R':5, 'P':1}
 CHECKMATE = 10000
 STALEMATE = 0
-DEPTH = 3
+DEPTH = 4
 
 #piece positional scores
 
@@ -93,7 +93,7 @@ def get_material_value(board):
 #positive is good for white, negative is good for black
 def score_board(gs):
     if gs.checkmate:
-        if gs.white_move:
+        if gs.white_to_move:
             return -CHECKMATE
         else:
             return CHECKMATE
@@ -122,7 +122,7 @@ def score_board(gs):
                     score -= piece_value[piece] + piece_positional_score*0.1
     
     #score on the basis of number of legal moves,checks and pins
-    if gs.white_move:
+    if gs.white_to_move:
         score += gs.no_of_legal_moves * 0.01
         if gs.in_check:
             score-=0.75
@@ -131,17 +131,15 @@ def score_board(gs):
     else:
         score -= gs.no_of_legal_moves * 0.01
         if gs.in_check:
-            score+=1
+            score+=0.75
         if len(gs.pins)>0:
             score+= len(gs.pins)*0.1
-
-    
-    
+ 
     return score
 
 
 def find_best_move(gs,legal_moves):
-    turn_multiplier = 1 if gs.white_move else -1
+    turn_multiplier = 1 if gs.white_to_move else -1
     opponent_minmax_score = CHECKMATE
     best_player_move = None
     random.shuffle(legal_moves)
@@ -181,7 +179,7 @@ def find_minmax_best_move(gs,legal_moves):
     global next_move
     next_move = None
     random.shuffle(legal_moves)
-    get_minmax_move(gs,legal_moves,DEPTH,gs.white_move)
+    get_minmax_move(gs,legal_moves,DEPTH,gs.white_to_move)
     return next_move
 
 
@@ -204,7 +202,6 @@ def get_minmax_move(gs,legal_moves,depth,white_to_move):
             gs.undo_move()
         return max_score
 
-
     else:
         min_score = CHECKMATE #start at the maximum score
         for move in legal_moves:
@@ -224,7 +221,7 @@ def find_negamax_best_move(gs,legal_moves):
     next_move = None
     random.shuffle(legal_moves)
     counter=0
-    get_negamax_move(gs,legal_moves,DEPTH, 1 if gs.white_move else -1)
+    get_negamax_move(gs,legal_moves,DEPTH, 1 if gs.white_to_move else -1)
     print(counter)
     return next_move
 
@@ -254,7 +251,7 @@ def find_alpha_beta_best_move(gs,legal_moves):
     next_move = None
     random.shuffle(legal_moves)
     counter=0
-    get_alpha_beta_move(gs,legal_moves,DEPTH,-CHECKMATE,CHECKMATE, 1 if gs.white_move else -1)
+    get_alpha_beta_move(gs,legal_moves,DEPTH,-CHECKMATE,CHECKMATE, 1 if gs.white_to_move else -1)
     print(counter)
     return next_move
 
